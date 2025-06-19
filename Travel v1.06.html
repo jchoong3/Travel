@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive AI Travel Itinerary Request</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.0/marked.min.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0ffef; /* Light green-grey background */
+        }
+        /* Custom styles for demonstration purposes, ensuring rounded corners */
+        .card {
+            border-radius: 1rem; /* Equivalent to rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Equivalent to shadow-xl */
+        }
+        .input-field, .select-field, .textarea-field {
+            border-radius: 0.5rem; /* Equivalent to rounded-lg */
+            border: 1px solid #d1d5db; /* Equivalent to border border-gray-300 */
+            padding: 0.75rem 1rem; /* Equivalent to px-4 py-3 */
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus, .select-field:focus, .textarea-field:focus {
+            outline: none;
+            border-color: #3b82f6; /* Equivalent to focus:border-blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Equivalent to focus:ring-2 focus:ring-blue-200 */
+        }
+        .btn-primary {
+            border-radius: 0.75rem; /* Equivalent to rounded-xl */
+            padding: 0.75rem 1.5rem; /* Equivalent to px-6 py-3 */
+            background-color: #2563eb; /* Equivalent to bg-blue-700 */
+            color: white;
+            font-weight: 600; /* Equivalent to font-semibold */
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8; /* Equivalent to hover:bg-blue-800 */
+        }
+        .form-section {
+            display: none; /* Hidden by default */
+        }
+        .form-section.active {
+            display: block; /* Shown when active */
+        }
+        /* Loading spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Basic prose styling for generated itinerary for better readability. */
+        #itineraryContent h1, #itineraryContent h2, #itineraryContent h3 {
+            font-weight: 700; /* bold */
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.2;
+        }
+        #itineraryContent h1 { font-size: 2.25rem; /* 3xl */ color: #1e40af; /* blue-800 */ }
+        #itineraryContent h2 { font-size: 1.875rem; /* 2xl */ color: #2563eb; /* blue-700 */ }
+        #itineraryContent h3 { font-size: 1.5rem; /* xl */ color: #3b82f6; /* blue-600 */ }
+        #itineraryContent p {
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+        #itineraryContent ul {
+            list-style-type: disc;
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        #itineraryContent ol {
+            list-style-type: decimal;
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        #itineraryContent li {
+            margin-bottom: 0.5em;
+        }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #f3f4f6;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .checkbox-item:hover {
+            background-color: #e0e7ff;
+            border-color: #93c5fd;
+        }
+        .checkbox-item input[type="checkbox"]:checked + span {
+            font-weight: 600;
+            color: #2563eb;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 0.5rem;
+            accent-color: #2563eb;
+        }
+         .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .radio-item input[type="radio"] {
+            margin-right: 0.5rem;
+            accent-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center p-4">
+
+    <div class="card bg-white p-8 md:p-10 lg:p-12 max-w-5xl w-full mx-auto shadow-xl rounded-xl">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-6">
+            Personalized AI Travel Itinerary Request
+        </h1>
+        <p class="text-center text-gray-600 mb-8" id="introText">
+            Tell us about your dream trip, and our AI will craft a custom itinerary for you!
+        </p>
+
+        <!-- Form Section -->
+        <div id="formContainer">
+            <form id="travelItineraryForm" class="space-y-6">
+
+                <!-- Basic Information Section -->
+                <div>
+                    <label for="destination" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Destination: <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="destination" name="destination" placeholder="e.g., Kyoto, Japan"
+                           class="input-field" required>
+                </div>
+
+                <!-- Travel Dates / Duration Selection -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        How would you like to specify travel dates? <span class="text-red-500">*</span>
+                    </label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="dateOption" value="specificDates" checked onchange="toggleDateInputFields()">
+                            <span>Specific Dates</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="dateOption" value="duration" onchange="toggleDateInputFields()">
+                            <span>Month, Year & Number of Days</span>
+                        </label>
+                    </div>
+
+                    <div id="specificDatesInput" class="form-section active transition-all duration-300 ease-in-out">
+                        <label for="travelDates" class="block text-gray-700 text-sm font-semibold mb-2">
+                            Travel Dates: <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="travelDates" name="travelDates" placeholder="e.g., June 15-22, 2025"
+                               class="input-field">
+                    </div>
+
+                    <div id="durationInputs" class="form-section transition-all duration-300 ease-in-out space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+                            <div class="flex-1">
+                                <label for="travelMonth" class="block text-gray-700 text-sm font-semibold mb-2">
+                                    Month: <span class="text-red-500">*</span>
+                                </label>
+                                <select id="travelMonth" name="travelMonth" class="select-field">
+                                    <option value="">Select Month</option>
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                            </div>
+                            <div class="flex-1">
+                                <label for="travelYear" class="block text-gray-700 text-sm font-semibold mb-2">
+                                    Year: <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" id="travelYear" name="travelYear" placeholder="e.g., 2025" min="2024" max="2050" class="input-field">
+                            </div>
+                            <div class="flex-1">
+                                <label for="durationDays" class="block text-gray-700 text-sm font-semibold mb-2">
+                                    Number of Days: <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" id="durationDays" name="durationDays" placeholder="e.g., 7" min="1" class="input-field">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div>
+                    <label for="numTravelers" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Number of Travelers: <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="numTravelers" name="numTravelers" placeholder="e.g., 2 adults, 1 child"
+                           class="input-field" min="1" required>
+                </div>
+
+                <!-- Interactive Section: Travel Style/Pace (now checkboxes) -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        What kind of trip are you looking for? <span class="text-red-500">*</span>
+                    </label>
+                    <div class="checkbox-group mb-4">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="relaxed" class="rounded-sm">
+                            <span>Relaxed & Leisurely</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="adventurous" class="rounded-sm">
+                            <span>Adventurous & Active</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="cultural" class="rounded-sm">
+                            <span>Cultural Immersion</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="fast-paced" class="rounded-sm">
+                            <span>Fast-paced Sightseeing</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="family" class="rounded-sm">
+                            <span>Family-friendly</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="travelStyle" value="romantic" class="rounded-sm">
+                            <span>Romantic Getaway</span>
+                        </label>
+                        <label class="checkbox-item" id="otherTravelStyleCheckboxLabel">
+                            <input type="checkbox" name="travelStyle" value="other" class="rounded-sm" onchange="showHidePaceOptions()">
+                            <span>Other</span>
+                        </label>
+                    </div>
+
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Your travel experience/focus:
+                    </label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="tripFocus" value="first_time" class="rounded-sm">
+                            <span>First Time Visitor</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="tripFocus" value="been_a_few_times" class="rounded-sm">
+                            <span>Been a Few Times</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="tripFocus" value="main_tourist_spots" class="rounded-sm">
+                            <span>Main Tourist Spots</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="tripFocus" value="less_tourist" class="rounded-sm">
+                            <span>Off-the-Beaten-Path</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Conditional Field for "Other" travel style text input -->
+                <div id="otherTravelStyleField" class="form-section transition-all duration-300 ease-in-out">
+                    <label for="otherTravelStyle" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Please specify your "Other" travel style:
+                    </label>
+                    <input type="text" id="otherTravelStyle" name="otherTravelStyle"
+                           class="input-field" placeholder="e.g., budget backpacking, luxury spa retreat">
+                </div>
+
+                <!-- Interests/Activities (now checkboxes) -->
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">
+                        Interests/Activities: <span class="text-red-500">*</span>
+                    </label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="historical_sites" class="rounded-sm">
+                            <span>Historical Sites</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="museums" class="rounded-sm">
+                            <span>Museums</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="hiking" class="rounded-sm">
+                            <span>Hiking/Nature Walks</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="beaches" class="rounded-sm">
+                            <span>Beaches & Relaxation</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="food_tours" class="rounded-sm">
+                            <span>Food Tours & Culinary</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="shopping" class="rounded-sm">
+                            <span>Shopping</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="nightlife" class="rounded-sm">
+                            <span>Nightlife & Entertainment</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interests" value="art_galleries" class="rounded-sm">
+                            <span>Art Galleries & Exhibitions</span>
+                        </label>
+                        <label class="checkbox-item" id="otherInterestsCheckboxLabel">
+                            <input type="checkbox" name="interests" value="other" class="rounded-sm" onchange="showHideOtherInterests()">
+                            <span>Other</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Conditional Field for "Other" interests text input -->
+                <div id="otherInterestsField" class="form-section transition-all duration-300 ease-in-out">
+                    <label for="otherInterests" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Please specify your "Other" interests:
+                    </label>
+                    <input type="text" id="otherInterests" name="otherInterests"
+                           class="input-field" placeholder="e.g., historical reenactments, hot air ballooning">
+                </div>
+
+                <!-- Interactive Section: Accommodation -->
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="needsAccommodation" name="needsAccommodation" class="rounded-sm text-blue-600 focus:ring-blue-500 h-5 w-5" onchange="toggleAccommodationDetails()">
+                    <label for="needsAccommodation" class="text-gray-700 text-sm font-semibold">
+                        Do you need accommodation suggestions?
+                    </label>
+                </div>
+
+                <!-- Conditional Section for Accommodation Details -->
+                <div id="accommodationDetails" class="form-section space-y-4 transition-all duration-300 ease-in-out">
+                    <h3 class="text-xl font-semibold text-gray-800 pt-4 border-t border-gray-200">Accommodation Preferences</h3>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2">
+                            Accommodation Type:
+                        </label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="boutique" class="rounded-sm">
+                                <span>Boutique Hotel</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="resort" class="rounded-sm">
+                                <span>Luxury Resort</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="mid_hotels" class="rounded-sm">
+                                <span>Mid-range Hotels</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="budget_hotels" class="rounded-sm">
+                                <span>Budget Hotels</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="airbnb" class="rounded-sm">
+                                <span>Airbnb/Vacation Rental</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="hostel" class="rounded-sm">
+                                <span>Hostel</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="accommodationType" value="camping" class="rounded-sm">
+                                <span>Camping</span>
+                            </label>
+                            <label class="checkbox-item" id="otherAccommodationTypeCheckboxLabel">
+                                <input type="checkbox" name="accommodationType" value="other" class="rounded-sm" onchange="showHideOtherAccommodation()">
+                                <span>Other</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="otherAccommodationTypeField" class="form-section transition-all duration-300 ease-in-out">
+                        <label for="otherAccommodationType" class="block text-gray-700 text-sm font-semibold mb-2">
+                            Please specify other accommodation type:
+                        </label>
+                        <input type="text" id="otherAccommodationType" name="otherAccommodationType"
+                               class="input-field" placeholder="e.g., eco-lodge, cruise ship">
+                    </div>
+                    <div>
+                        <label for="budgetAccommodation" class="block text-gray-700 text-sm font-semibold mb-2">
+                            Accommodation Budget per night (Optional):
+                        </label>
+                        <input type="text" id="budgetAccommodation" name="budgetAccommodation"
+                               placeholder="e.g., $150-250, Luxury, Budget-friendly" class="input-field">
+                    </div>
+                </div>
+
+                <!-- Other Optional Preferences -->
+                <div>
+                    <label for="mealPreferences" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Meal Preferences (Optional):
+                    </label>
+                    <input type="text" id="mealPreferences" name="mealPreferences"
+                           placeholder="e.g., Vegetarian, fine dining, local street food" class="input-field">
+                </div>
+
+                <div>
+                    <label for="transportPreference" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Mode of Transport Preference at Destination (Optional):
+                    </label>
+                    <input type="text" id="transportPreference" name="transportPreference"
+                           placeholder="e.g., Public transport, rental car, walking" class="input-field">
+                </div>
+
+                <div>
+                    <label for="notes" class="block text-gray-700 text-sm font-semibold mb-2">
+                        Any other notes or special requests? (Optional):
+                    </label>
+                    <textarea id="notes" name="notes" rows="3"
+                              placeholder="e.g., specific dates to avoid, accessibility needs" class="textarea-field"></textarea>
+                </div>
+
+                <div class="text-center pt-4">
+                    <button type="submit" class="btn-primary">
+                        Generate My Itinerary
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="hidden flex flex-col items-center justify-center p-8 text-gray-700">
+            <div class="loader mb-4"></div>
+            <p class="text-lg font-semibold">Generating your personalized itinerary...</p>
+            <p class="text-sm text-gray-500 mt-2">This may take a moment.</p>
+        </div>
+
+        <!-- Itinerary Display Section -->
+        <div id="itineraryDisplay" class="hidden space-y-6 text-gray-800 bg-gray-50 p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl md:text-3xl font-bold text-center text-blue-700 mb-4">
+                Your Personalized Itinerary
+            </h2>
+            <div id="itineraryContent" class="prose max-w-none">
+                <!-- Itinerary generated by AI will be injected here -->
+            </div>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 pt-8">
+                <button onclick="modifyRequest()" class="btn-primary bg-green-600 hover:bg-green-700">
+                    Modify Itinerary Request
+                </button>
+                <button onclick="startNewRequest()" class="btn-primary bg-blue-700 hover:bg-blue-800">
+                    Start New Itinerary Request
+                </button>
+            </div>
+        </div>
+
+        <!-- Message Box for Submission/Errors -->
+        <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
+                <p id="messageText" class="text-lg font-semibold text-gray-800 mb-4"></p>
+                <button onclick="hideMessageBox()" class="btn-primary px-4 py-2 text-base">OK</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global variable to store the last submitted form data
+        let lastFormData = {};
+
+        // Function to show a custom message box instead of alert()
+        function showMessageBox(message) {
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+        }
+
+        // Function to hide the custom message box
+        function hideMessageBox() {
+            document.getElementById('messageBox').classList.add('hidden');
+        }
+
+        // --- View Management ---
+        const formContainer = document.getElementById('formContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const itineraryDisplay = document.getElementById('itineraryDisplay');
+        const itineraryContent = document.getElementById('itineraryContent');
+        const introText = document.getElementById('introText');
+
+        /**
+         * Switches the view between the form, loading indicator, and itinerary display.
+         * @param {'form'|'loading'|'itinerary'} view The view to show.
+         */
+        function switchView(view) {
+            formContainer.classList.add('hidden');
+            loadingIndicator.classList.add('hidden');
+            itineraryDisplay.classList.add('hidden');
+            introText.classList.remove('hidden'); // Ensure intro text is visible when showing form or on start
+
+            if (view === 'form') {
+                formContainer.classList.remove('hidden');
+                introText.textContent = 'Tell us about your dream trip, and our AI will craft a custom itinerary for you!';
+            } else if (view === 'loading') {
+                loadingIndicator.classList.remove('hidden');
+                introText.classList.add('hidden'); // Hide intro text during loading
+            } else if (view === 'itinerary') {
+                itineraryDisplay.classList.remove('hidden');
+                introText.classList.add('hidden'); // Hide intro text when itinerary is displayed
+            }
+        }
+
+        /**
+         * Resets the form and switches back to the form view.
+         */
+        function startNewRequest() {
+            document.getElementById('travelItineraryForm').reset();
+            lastFormData = {}; // Clear stored data
+            // Manually trigger onchange for selects/checkboxes to reset conditional visibility
+            toggleDateInputFields(); // Reset date fields visibility
+            showHidePaceOptions();
+            showHideOtherInterests();
+            toggleAccommodationDetails();
+            showHideOtherAccommodation();
+            itineraryContent.innerHTML = ''; // Clear previous itinerary
+            switchView('form');
+        }
+
+        /**
+         * Populates the form fields with data from an object.
+         * @param {Object} data The data object to populate the form with.
+         */
+        function populateForm(data) {
+            const form = document.getElementById('travelItineraryForm');
+
+            // Handle standard text/number inputs
+            for (const key in data) {
+                const element = form.elements[key];
+                if (element && element.type !== 'checkbox' && element.type !== 'radio') {
+                    element.value = data[key];
+                }
+            }
+
+            // Handle radio buttons (e.g., dateOption)
+            if (data.dateOption) {
+                const radio = form.querySelector(`input[name="dateOption"][value="${data.dateOption}"]`);
+                if (radio) {
+                    radio.checked = true;
+                }
+            } else {
+                 // Default to specificDates if no option was saved (e.g., first load)
+                document.querySelector('input[name="dateOption"][value="specificDates"]').checked = true;
+            }
+
+
+            // Handle checkboxes separately for multi-select fields
+            const checkboxGroups = ['travelStyle', 'tripFocus', 'interests', 'accommodationType']; // Define all checkbox group names
+            checkboxGroups.forEach(groupName => {
+                const checkboxesInGroup = form.querySelectorAll(`input[name="${groupName}"]`);
+                checkboxesInGroup.forEach(checkbox => {
+                    checkbox.checked = false; // Uncheck all first
+                    if (data[groupName] && typeof data[groupName] === 'string') {
+                        const values = data[groupName].split(', ').map(v => v.trim());
+                        if (values.includes(checkbox.value)) {
+                            checkbox.checked = true;
+                        }
+                    }
+                });
+            });
+
+            // Manually trigger change events for conditional fields after populating
+            toggleDateInputFields(); // Crucial for date fields
+            showHidePaceOptions();
+            showHideOtherInterests();
+            toggleAccommodationDetails();
+            showHideOtherAccommodation();
+        }
+
+        /**
+         * Switches to the form view and populates it with the last submitted data.
+         */
+        function modifyRequest() {
+            switchView('form');
+            populateForm(lastFormData);
+        }
+
+        // --- Interactive Logic ---
+
+        // Get references to conditional elements
+        const specificDatesInputSection = document.getElementById('specificDatesInput');
+        const durationInputsSection = document.getElementById('durationInputs');
+
+        const otherTravelStyleField = document.getElementById('otherTravelStyleField');
+        const otherInterestsField = document.getElementById('otherInterestsField');
+        const needsAccommodationCheckbox = document.getElementById('needsAccommodation');
+        const accommodationDetailsSection = document.getElementById('accommodationDetails');
+        const otherAccommodationTypeField = document.getElementById('otherAccommodationTypeField');
+
+
+        /**
+         * Toggles visibility of date input fields based on radio button selection.
+         */
+        function toggleDateInputFields() {
+            const selectedOption = document.querySelector('input[name="dateOption"]:checked');
+            // If no option is checked (e.g., after reset), default to specificDates
+            const selectedValue = selectedOption ? selectedOption.value : 'specificDates';
+
+
+            if (selectedValue === 'specificDates') {
+                specificDatesInputSection.classList.add('active');
+                durationInputsSection.classList.remove('active');
+                // Clear duration fields if switching away from them
+                document.getElementById('travelMonth').value = '';
+                document.getElementById('travelYear').value = '';
+                document.getElementById('durationDays').value = '';
+            } else { // duration
+                specificDatesInputSection.classList.remove('active');
+                durationInputsSection.classList.add('active');
+                // Clear specific dates field if switching away from it
+                document.getElementById('travelDates').value = '';
+            }
+            // Add or remove 'required' attributes dynamically
+            document.getElementById('travelDates').required = (selectedValue === 'specificDates');
+            document.getElementById('travelMonth').required = (selectedValue === 'duration');
+            document.getElementById('travelYear').required = (selectedValue === 'duration');
+            document.getElementById('durationDays').required = (selectedValue === 'duration');
+        }
+
+
+        /**
+         * Toggles the visibility of the "Other Travel Style" input field
+         * based on whether the "Other" travel style checkbox is checked.
+         */
+        function showHidePaceOptions() {
+            const otherTravelStyleCheckbox = document.querySelector('input[name="travelStyle"][value="other"]');
+            if (otherTravelStyleCheckbox && otherTravelStyleCheckbox.checked) {
+                otherTravelStyleField.classList.add('active'); // Show
+            } else {
+                otherTravelStyleField.classList.remove('active'); // Hide
+                document.getElementById('otherTravelStyle').value = ''; // Clear value when hidden
+            }
+        }
+
+        /**
+         * Toggles the visibility of the "Other Interests" input field
+         * based on whether the "Other" interests checkbox is checked.
+         */
+        function showHideOtherInterests() {
+            const otherInterestsCheckbox = document.querySelector('input[name="interests"][value="other"]');
+            if (otherInterestsCheckbox && otherInterestsCheckbox.checked) {
+                otherInterestsField.classList.add('active'); // Show
+            } else {
+                otherInterestsField.classList.remove('active'); // Hide
+                document.getElementById('otherInterests').value = ''; // Clear value when hidden
+            }
+        }
+
+
+        /**
+         * Toggles the visibility of the "Accommodation Details" section
+         * based on whether the "needsAccommodation" checkbox is checked.
+         */
+        function toggleAccommodationDetails() {
+            if (needsAccommodationCheckbox.checked) {
+                accommodationDetailsSection.classList.add('active'); // Show
+            } else {
+                accommodationDetailsSection.classList.remove('active'); // Hide
+                // Optionally clear fields when hidden
+                const accommodationTypeCheckboxes = document.querySelectorAll('input[name="accommodationType"]');
+                accommodationTypeCheckboxes.forEach(cb => cb.checked = false);
+                document.getElementById('budgetAccommodation').value = '';
+                otherAccommodationTypeField.classList.remove('active'); // Ensure other accommodation is hidden
+                document.getElementById('otherAccommodationType').value = '';
+            }
+        }
+
+        /**
+         * Toggles the visibility of the "Other Accommodation Type" input field
+         * based on whether the "Other" accommodation type checkbox is checked.
+         */
+        function showHideOtherAccommodation() {
+            const otherAccommodationTypeCheckbox = document.querySelector('input[name="accommodationType"][value="other"]');
+            if (otherAccommodationTypeCheckbox && otherAccommodationTypeCheckbox.checked) {
+                otherAccommodationTypeField.classList.add('active'); // Show
+            } else {
+                otherAccommodationTypeField.classList.remove('active'); // Hide
+                document.getElementById('otherAccommodationType').value = ''; // Clear value when hidden
+            }
+        }
+
+        // Event listener for the accommodationType checkboxes to show/hide 'other' input
+        // Attach listener to a parent that contains all accommodationType checkboxes
+        document.querySelector('#accommodationDetails .checkbox-group').addEventListener('change', showHideOtherAccommodation);
+
+
+        /**
+         * Attempts to parse travel dates and return the number of days.
+         * Handles formats like "June 15-22, 2025" or "5 days", or month/year/num days.
+         * @param {Object} data The form data object.
+         * @returns {number|string} Number of days, or a descriptive string if not parseable.
+         */
+        function getNumberOfDays(data) {
+            const dateOption = data.dateOption;
+
+            if (dateOption === 'duration' && data.durationDays) {
+                return parseInt(data.durationDays, 10);
+            }
+
+            const dateString = data.travelDates || '';
+            dateString.trim();
+
+            // Try to parse "X days" format (might be from previous manual entry)
+            const daysMatch = dateString.match(/^(\d+)\s*days?$/i);
+            if (daysMatch) {
+                return parseInt(daysMatch[1], 10);
+            }
+
+            // Try to parse "Month Day-Day, Year" or "Day/Month - Day/Month, Year"
+            try {
+                // Regex to capture start and end dates in common formats
+                const dateRangeMatch = dateString.match(/(\w+\s+\d{1,2}(?:,\s*\d{4})?)\s*-\s*(\w+\s+\d{1,2},\s*\d{4})|(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*-\s*(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/);
+
+                if (dateRangeMatch) {
+                    let startDate, endDate;
+                    if (dateRangeMatch[1] && dateRangeMatch[2]) { // e.g., "June 15 - June 22, 2025"
+                        startDate = new Date(dateRangeMatch[1].replace(/,\s*(\d{4})/, ' $1')); // Add year to start if missing
+                        endDate = new Date(dateRangeMatch[2]);
+                    } else if (dateRangeMatch[3] && dateRangeMatch[4]) { // e.g., "15/06 - 22/06" or "15/06/2025 - 22/06/2025"
+                        // Handle DD/MM/YYYY or DD/MM format
+                        const parseDate = (dStr) => {
+                            const parts = dStr.split('/');
+                            if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+                            if (parts.length === 2) {
+                                const currentYear = new Date().getFullYear();
+                                return new Date(currentYear, parts[1] - 1, parts[0]);
+                            }
+                            return null;
+                        };
+                        startDate = parseDate(dateRangeMatch[3]);
+                        endDate = parseDate(dateRangeMatch[4]);
+                    }
+
+                    if (startDate && endDate && !isNaN(startDate) && !isNaN(endDate)) {
+                        // Add one day to include the end date in the count
+                        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include end day
+                        return diffDays;
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not parse date string:", dateString, e);
+                // Fall through to return descriptive string
+            }
+
+            return `User provided dates: ${dateString}. Please use this information to determine the duration.`;
+        }
+
+
+        // Form Submission Handler (Integrates with AI API)
+        document.getElementById('travelItineraryForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const form = event.target;
+            const data = {};
+            const checkboxValues = {}; // Temporary storage for checkbox groups
+
+            // Basic client-side validation before showing loading indicator
+            const selectedDateOption = document.querySelector('input[name="dateOption"]:checked').value;
+            let isValid = true;
+            let validationMessage = '';
+
+            if (!form.elements['destination'].value) {
+                validationMessage = 'Please enter a destination.';
+                isValid = false;
+            } else if (selectedDateOption === 'specificDates' && !form.elements['travelDates'].value) {
+                validationMessage = 'Please enter specific travel dates.';
+                isValid = false;
+            } else if (selectedDateOption === 'duration') {
+                if (!form.elements['travelMonth'].value || !form.elements['travelYear'].value || !form.elements['durationDays'].value) {
+                    validationMessage = 'Please enter a month, year, and number of days for your trip.';
+                    isValid = false;
+                }
+            } else if (!form.elements['numTravelers'].value || parseInt(form.elements['numTravelers'].value) < 1) {
+                validationMessage = 'Please enter a valid number of travelers.';
+                isValid = false;
+            }
+
+            // Check if any travel style checkbox is selected (except 'other' if its text is empty)
+            const travelStyleCheckboxes = document.querySelectorAll('input[name="travelStyle"]:checked');
+            let hasTravelStyle = false;
+            if (travelStyleCheckboxes.length > 0) {
+                if (travelStyleCheckboxes.length === 1 && travelStyleCheckboxes[0].value === 'other') {
+                    if (document.getElementById('otherTravelStyle').value.trim() !== '') {
+                        hasTravelStyle = true;
+                    }
+                } else if (travelStyleCheckboxes.length > 0) {
+                    hasTravelStyle = true;
+                }
+            }
+            if (!hasTravelStyle) {
+                validationMessage = 'Please select at least one travel style.';
+                isValid = false;
+            }
+
+            // Check if any interests checkbox is selected (except 'other' if its text is empty)
+            const interestsCheckboxes = document.querySelectorAll('input[name="interests"]:checked');
+            let hasInterests = false;
+            if (interestsCheckboxes.length > 0) {
+                if (interestsCheckboxes.length === 1 && interestsCheckboxes[0].value === 'other') {
+                     if (document.getElementById('otherInterests').value.trim() !== '') {
+                        hasInterests = true;
+                     }
+                } else if (interestsCheckboxes.length > 0) {
+                    hasInterests = true;
+                }
+            }
+            if (!hasInterests) {
+                validationMessage = 'Please select at least one interest/activity.';
+                isValid = false;
+            }
+
+
+            if (!isValid) {
+                showMessageBox(validationMessage);
+                return; // Stop function execution if validation fails
+            }
+
+            switchView('loading'); // Show loading indicator only after validation passes
+
+            // Iterate over all form elements directly by name
+            for (let i = 0; i < form.elements.length; i++) {
+                const element = form.elements[i];
+                if (element.name) { // Only process elements that have a name attribute
+                    if (element.type === 'checkbox') {
+                        if (element.checked) {
+                            if (!checkboxValues[element.name]) {
+                                checkboxValues[element.name] = [];
+                            }
+                            checkboxValues[element.name].push(element.value);
+                        }
+                    } else if (element.type === 'radio') {
+                        if (element.checked) {
+                            data[element.name] = element.value;
+                        }
+                    } else {
+                        data[element.name] = element.value;
+                    }
+                }
+            }
+
+            // Merge collected checkbox values into main data object as comma-separated strings
+            for (const key in checkboxValues) {
+                data[key] = checkboxValues[key].join(', ');
+            }
+
+            // Special handling for date fields based on selection
+            if (data.dateOption === 'specificDates') {
+                data.travelMonth = ''; // Clear other date fields if not used
+                data.travelYear = '';
+                data.durationDays = '';
+            } else { // duration
+                data.travelDates = ''; // Clear specific dates field if not used
+            }
+
+
+            // Explicitly handle "other" text inputs if their corresponding checkbox is NOT selected
+            // This ensures they are cleared if the 'other' checkbox becomes unchecked
+            if (!(data.travelStyle && data.travelStyle.includes('other'))) {
+                data.otherTravelStyle = '';
+            }
+            if (!(data.interests && data.interests.includes('other'))) {
+                data.otherInterests = '';
+            }
+            // Now, check for 'other' in the combined accommodationType string
+            if (!(data.accommodationType && data.accommodationType.includes('other'))) {
+                data.otherAccommodationType = '';
+            }
+            // Ensure needsAccommodation is consistent even if checkbox state is 'No'
+            if (!document.getElementById('needsAccommodation').checked) {
+                data.needsAccommodation = 'No';
+                data.accommodationType = ''; // Clear all accommodation checkboxes data if needsAccommodation is false
+                data.otherAccommodationType = '';
+                data.budgetAccommodation = '';
+            } else {
+                 data.needsAccommodation = 'Yes';
+            }
+
+
+            console.log('Form Data Collected:', data);
+
+            // Store this data for potential modification
+            lastFormData = { ...data };
+
+            // Calculate number of days, passing the entire data object
+            const numberOfDays = getNumberOfDays(data);
+            let daysPrompt = '';
+            if (typeof numberOfDays === 'number') {
+                daysPrompt = `Duration: ${numberOfDays} days.`;
+            } else {
+                daysPrompt = `Duration: ${numberOfDays}`; // Will include the original date string or duration text
+            }
+
+            let travelDatesForPrompt = '';
+            if (data.dateOption === 'specificDates' && data.travelDates) {
+                travelDatesForPrompt = `Travel Dates: ${data.travelDates}`;
+            } else if (data.dateOption === 'duration' && data.travelMonth && data.travelYear && data.durationDays) {
+                travelDatesForPrompt = `Travel Period: ${data.travelMonth} ${data.travelYear} for ${data.durationDays} days`;
+            } else {
+                travelDatesForPrompt = 'Travel Dates: Not specified (or partial information)';
+            }
+
+            // Construct the prompt for the AI, explicitly asking for Markdown and structured sections
+            let prompt = `Please generate a **new and updated** detailed, day-by-day travel itinerary *strictly based on the following parameters*. Disregard any previous requests if this is a modification. Ensure it includes realistic timings, accommodation suggestions (if requested), dining ideas, transportation tips within the destination, and relevant practical advice (e.g., booking tips, local customs, packing advice).
+
+            Aim for a comprehensive yet concise response, focusing on key highlights and actionable advice to improve generation speed.
+
+            Please format the entire output using **Markdown syntax** for clear, professional, and easy-to-read sections. Separate content into paragraphs and group related information.
+
+            **Here's the required structure:**
+
+            # Your Personalized Travel Itinerary
+
+            ## Assumptions
+            * Briefly state any key assumptions made based on the provided input (e.g., "Assumed a moderate fitness level for hiking activities," "Assumed preference for local cuisine over international chains").
+
+            ## Example Itinerary (Day-by-Day Plan)
+            * For each day, use a primary heading (e.g., '# Day 1: Exploring Ancient Temples').
+            * Within each day, use secondary headings for time blocks (e.g., '## Morning Activities', '## Lunch', '## Afternoon Exploration', '## Evening & Dinner').
+            * Use bullet points for specific activities and suggestions.
+            * Include estimated timings for activities where appropriate.
+
+            ## Pre-Trip Planning (Important Information)
+            * Provide general advice for preparing for the trip, such as:
+                * Visa and Entry Requirements (if applicable, suggest checking official sources)
+                * Currency and Budgeting Tips
+                * Packing Essentials (relevant to destination/activities)
+                * Local Etiquette and Customs
+                * Connectivity (SIM cards, Wi-Fi)
+                * Emergency Contacts/Information
+                * Booking Recommendations (flights, accommodation, popular tours)
+                * Any other crucial information for a smooth trip.
+
+            **User Preferences:**
+            Destination: ${data.destination || 'Not specified'}
+            ${travelDatesForPrompt}
+            ${daysPrompt}
+            Number of Travelers: ${data.numTravelers || 'Not specified'}
+            Travel Style/Pace: ${data.travelStyle || 'Not specified'}${data.otherTravelStyle ? ` (${data.otherTravelStyle})` : ''}
+            Trip Focus: ${data.tripFocus || 'Not specified'}
+            Interests/Activities: ${data.interests || 'Not specified'}${data.otherInterests ? ` (${data.otherInterests})` : ''}
+            Needs Accommodation: ${data.needsAccommodation || 'No'}
+            ${data.needsAccommodation === 'Yes' ? `Accommodation Type: ${data.accommodationType || 'Any'}${data.otherAccommodationType ? ` (${data.otherAccommodationType})` : ''} Budget: ${data.budgetAccommodation || 'Any'}` : ''}
+            Meal Preferences: ${data.mealPreferences || 'Not specified'}
+            Mode of Transport Preference: ${data.transportPreference || 'Not specified'}
+            Other Notes: ${data.notes || 'None'}
+
+            Ensure the language is engaging and helpful for the traveler.
+            `;
+
+            // API Call to Gemini
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "AIzaSyBtoFGVJidXXvMpF6qRJd-_E8he96oRAL0"; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log('Full AI API Response:', JSON.stringify(result, null, 2));
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const generatedText = result.candidates[0].content.parts[0].text;
+                    // Use marked.parse to convert Markdown to HTML
+                    itineraryContent.innerHTML = marked.parse(generatedText);
+                    switchView('itinerary'); // Show the itinerary display
+                } else {
+                    showMessageBox('Error: Could not generate itinerary. The AI response was empty or malformed. Check console for details.');
+                    console.error('AI response structure unexpected or empty:', result);
+                    switchView('form'); // Go back to form on error
+                }
+            } catch (error) {
+                console.error('Error generating itinerary (API call failed):', error);
+                showMessageBox('An error occurred while generating your itinerary. Please try again later. Check console for details.');
+                switchView('form'); // Go back to form on error
+            }
+        });
+
+        // Initialize the form state on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleDateInputFields(); // Set initial visibility for date fields
+            showHidePaceOptions(); // Adjust visibility of 'other' travel style
+            showHideOtherInterests(); // Adjust visibility of 'other' interests
+            toggleAccommodationDetails(); // Adjust visibility of accommodation details
+            showHideOtherAccommodation(); // Adjust visibility of 'other' accommodation type
+            switchView('form'); // Ensure form is visible initially
+        });
+
+    </script>
+</body>
+</html>
